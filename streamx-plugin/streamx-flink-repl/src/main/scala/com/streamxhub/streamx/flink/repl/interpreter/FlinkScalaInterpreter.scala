@@ -38,13 +38,15 @@ import org.apache.hadoop.conf.{Configuration => HdfsConfig}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.yarn.api.records.ApplicationId
 import org.slf4j.LoggerFactory
-
 import java.io.{BufferedReader, File, IOException}
 import java.net.URLClassLoader
 import java.nio.file.Files
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
+
+import com.streamxhub.streamx.common.conf.ConfigConst
+
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import scala.tools.nsc.Settings
@@ -474,7 +476,7 @@ class FlinkScalaInterpreter(properties: Properties) {
     val flinkPackageJars =
       if (!StringUtils.isBlank(properties.getProperty("flink.execution.packages", ""))) {
         val packages = properties.getProperty("flink.execution.packages")
-        DependencyUtils.resolveMavenDependencies(null, packages, null, null, null, new Consumer[String]() {
+        DependencyUtils.resolveMavenDependencies(null, packages, ConfigConst.CUSTOMER_MAVEN_REMOTE_URL, null, null, new Consumer[String]() {
           override def accept(t: String): Unit = logInfo(t)
         })
       } else {

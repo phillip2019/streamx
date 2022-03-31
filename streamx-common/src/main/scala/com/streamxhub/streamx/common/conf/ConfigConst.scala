@@ -180,6 +180,11 @@ object ConfigConst {
   val KEY_FLINK_TABLE_DATABASE = "flink.table.database"
 
   /**
+   * 本地maven库地址
+   */
+  val CUSTOMER_MAVEN_REMOTE_URL: String = "http://172.18.8.15:8080/repository/public/"
+
+  /**
    * about config Kafka
    */
 
