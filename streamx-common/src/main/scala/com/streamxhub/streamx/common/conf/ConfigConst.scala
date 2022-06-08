@@ -47,6 +47,12 @@ object ConfigConst {
   val KEY_STREAMX_CONSOLE_URL = "streamx.console.url"
 
   /**
+   * 本地maven库地址
+   */
+  val CUSTOMER_MAVEN_REMOTE_URL: String = "http://172.18.8.15:8080/repository/public/"
+
+
+  /**
    * sign....
    */
   val SIGN_COLON = ":"
