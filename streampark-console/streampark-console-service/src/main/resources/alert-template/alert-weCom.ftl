@@ -23,7 +23,7 @@
 -   **Start Time：${startTime}**
 -   **Duration：${duration}**
 </#if>
--   **Restart Action：<#if link??>[Restart](${"http://localhost:10000/flink/alert/restart?jobName="}etl_event_tracking2hive_sql)</#if>**
+-   **Restart Action：<#if link??>[Restart](${"http://172.18.5.14:30000/flink/alert/restart?jobName="}${jobName})</#if>**
 > Best Wishes!
 > Apache StreamPark
 
