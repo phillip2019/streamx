@@ -73,6 +73,7 @@ public class ShiroConfig {
     filterChainDefinitionMap.put("/*.less", "anon");
     filterChainDefinitionMap.put("/*.ico", "anon");
     filterChainDefinitionMap.put("/", "anon");
+    filterChainDefinitionMap.put("/flink/alert/restart", "anon");
     filterChainDefinitionMap.put("/**", "jwt");
 
     shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);

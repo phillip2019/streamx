@@ -31,4 +31,6 @@ public interface AlertService {
   void alert(Application application, FlinkAppState appState);
 
   boolean alert(AlertConfigWithParams params, AlertTemplate alertTemplate) throws AlertException;
+
+  String restart(String jobName);
 }

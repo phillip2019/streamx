@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -129,5 +130,12 @@ public class AlertController {
     boolean alert =
         alertService.alert(AlertConfigWithParams.of(alertConfigService.getById(id)), alertTemplate);
     return RestResponse.success(alert);
+  }
+
+  @Operation(summary = "Alert restart application")
+  @GetMapping("/restart")
+  public RestResponse restart(String jobName) throws AlertException {
+    String res = alertService.restart(jobName);
+    return RestResponse.success(res);
   }
 }

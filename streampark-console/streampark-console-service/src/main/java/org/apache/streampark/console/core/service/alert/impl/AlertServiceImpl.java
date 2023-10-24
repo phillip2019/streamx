@@ -1,24 +1,8 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.streampark.console.core.service.alert.impl;
 
 import org.apache.streampark.common.util.Utils;
 import org.apache.streampark.console.base.exception.AlertException;
+import org.apache.streampark.console.base.util.HttpUtils;
 import org.apache.streampark.console.base.util.SpringContextUtils;
 import org.apache.streampark.console.core.bean.AlertConfigWithParams;
 import org.apache.streampark.console.core.bean.AlertTemplate;
@@ -31,19 +15,37 @@ import org.apache.streampark.console.core.service.alert.AlertConfigService;
 import org.apache.streampark.console.core.service.alert.AlertNotifyService;
 import org.apache.streampark.console.core.service.alert.AlertService;
 
+import org.apache.streampark.shaded.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.streampark.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 public class AlertServiceImpl implements AlertService {
+  @Value("${web.server.ip}")
+  private String webServerIp;
+
+  @Value("${web.server.port}")
+  private String webServerPort;
+
+  @Value("${web.restart.authorization}")
+  private String webRestartAuthorization;
+
   @Autowired private AlertConfigService alertConfigService;
+
+  private ObjectMapper objectMapper = new ObjectMapper();
+  private HttpUtils httpUtils = HttpUtils.init();
 
   @Override
   public void alert(Application application, CheckPointStatus checkPointStatus) {
@@ -55,6 +57,50 @@ public class AlertServiceImpl implements AlertService {
   public void alert(Application application, FlinkAppState appState) {
     AlertTemplate alertTemplate = AlertTemplate.of(application, appState);
     alert(application, alertTemplate);
+  }
+
+  @Override
+  public String restart(String jobName) {
+    httpUtils.setHeader("Accept", "*/*");
+    httpUtils.setHeader("Authorization", webRestartAuthorization);
+    String baseUrl =
+        new StringBuilder("http://")
+            .append(webServerIp)
+            .append(":")
+            .append(webServerPort)
+            .toString();
+    String listUrl =
+        new StringBuilder(baseUrl)
+            .append("/flink/app/list?jobName=")
+            .append(jobName)
+            .append("&teamId=1&pageNum=1&pageSize=1")
+            .toString();
+    try {
+      Map<String, String> postResult = httpUtils.post(listUrl);
+      JsonNode rootNode = objectMapper.readTree(postResult.get("result"));
+      JsonNode recordsNode = rootNode.path("data").path("records");
+      if (recordsNode != null && recordsNode.isArray() && recordsNode.size() > 0) {
+        String appId = recordsNode.get(0).path("id").asText();
+        if (StringUtils.isNotBlank(appId)) {
+          String startUrl =
+              new StringBuilder(baseUrl)
+                  .append("/flink/app/start?id=")
+                  .append(appId)
+                  .append("&savePointed=true")
+                  .toString();
+          postResult = httpUtils.post(startUrl);
+          JsonNode resultNode = objectMapper.readTree(postResult.get("result"));
+          String returnResult =
+              resultNode.path("message").asText() == ""
+                  ? "restart success"
+                  : resultNode.path("message").asText();
+          return returnResult;
+        }
+      }
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
+    }
+    return null;
   }
 
   private void alert(Application application, AlertTemplate alertTemplate) {

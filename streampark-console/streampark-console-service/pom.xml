@@ -54,6 +54,7 @@
         <xml-apis.version>1.4.01</xml-apis.version>
         <ivy.version>2.5.0</ivy.version>
         <eclipse.jgit.version>5.13.1.202206130422-r</eclipse.jgit.version>
+        <mysql.version>8.0.19</mysql.version>
     </properties>
 
     <dependencyManagement>
@@ -398,6 +399,12 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>force-shading</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql.version}</version>
         </dependency>
     </dependencies>
 
