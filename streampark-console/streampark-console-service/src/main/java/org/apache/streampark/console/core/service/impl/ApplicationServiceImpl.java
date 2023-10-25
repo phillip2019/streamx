@@ -1125,8 +1125,8 @@ public class ApplicationServiceImpl extends ServiceImpl<ApplicationMapper, Appli
   @Override
   public Application getApp(Application appParam) {
     Application application = this.baseMapper.getApp(appParam);
-    ApplicationConfig config = configService.getEffective(appParam.getId());
-    config = config == null ? configService.getLatest(appParam.getId()) : config;
+    ApplicationConfig config = configService.getEffective(application.getId());
+    config = config == null ? configService.getLatest(application.getId()) : config;
     if (config != null) {
       config.setToApplication(application);
     }

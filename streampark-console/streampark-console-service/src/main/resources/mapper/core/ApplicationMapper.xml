@@ -191,7 +191,7 @@
         select t.*, p.name as projectName
         from t_flink_app t left join t_flink_project p
         on t.project_id = p.id
-        where t.id = #{application.id}
+        where t.id = #{application.id} or t.job_name = #{application.jobName}
     </select>
 
     <update id="persistMetrics" parameterType="org.apache.streampark.console.core.entity.Application">

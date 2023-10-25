@@ -2,7 +2,6 @@ package org.apache.streampark.console.core.service.alert.impl;
 
 import org.apache.streampark.common.util.Utils;
 import org.apache.streampark.console.base.exception.AlertException;
-import org.apache.streampark.console.base.util.HttpUtils;
 import org.apache.streampark.console.base.util.SpringContextUtils;
 import org.apache.streampark.console.core.bean.AlertConfigWithParams;
 import org.apache.streampark.console.core.bean.AlertTemplate;
@@ -11,41 +10,26 @@ import org.apache.streampark.console.core.entity.Application;
 import org.apache.streampark.console.core.enums.AlertType;
 import org.apache.streampark.console.core.enums.CheckPointStatus;
 import org.apache.streampark.console.core.enums.FlinkAppState;
+import org.apache.streampark.console.core.service.ApplicationService;
 import org.apache.streampark.console.core.service.alert.AlertConfigService;
 import org.apache.streampark.console.core.service.alert.AlertNotifyService;
 import org.apache.streampark.console.core.service.alert.AlertService;
 
-import org.apache.streampark.shaded.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.streampark.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
 public class AlertServiceImpl implements AlertService {
-  @Value("${web.server.ip}")
-  private String webServerIp;
-
-  @Value("${web.server.port}")
-  private String webServerPort;
-
-  @Value("${web.restart.authorization}")
-  private String webRestartAuthorization;
+  @Autowired private ApplicationService applicationService;
 
   @Autowired private AlertConfigService alertConfigService;
-
-  private ObjectMapper objectMapper = new ObjectMapper();
-  private HttpUtils httpUtils = HttpUtils.init();
 
   @Override
   public void alert(Application application, CheckPointStatus checkPointStatus) {
@@ -61,46 +45,16 @@ public class AlertServiceImpl implements AlertService {
 
   @Override
   public String restart(String jobName) {
-    httpUtils.setHeader("Accept", "*/*");
-    httpUtils.setHeader("Authorization", webRestartAuthorization);
-    String baseUrl =
-        new StringBuilder("http://")
-            .append(webServerIp)
-            .append(":")
-            .append(webServerPort)
-            .toString();
-    String listUrl =
-        new StringBuilder(baseUrl)
-            .append("/flink/app/list?jobName=")
-            .append(jobName)
-            .append("&teamId=1&pageNum=1&pageSize=1")
-            .toString();
+    Application app = new Application();
+    app.setJobName(jobName);
+    Application application = applicationService.getApp(app);
     try {
-      Map<String, String> postResult = httpUtils.post(listUrl);
-      JsonNode rootNode = objectMapper.readTree(postResult.get("result"));
-      JsonNode recordsNode = rootNode.path("data").path("records");
-      if (recordsNode != null && recordsNode.isArray() && recordsNode.size() > 0) {
-        String appId = recordsNode.get(0).path("id").asText();
-        if (StringUtils.isNotBlank(appId)) {
-          String startUrl =
-              new StringBuilder(baseUrl)
-                  .append("/flink/app/start?id=")
-                  .append(appId)
-                  .append("&savePointed=true")
-                  .toString();
-          postResult = httpUtils.post(startUrl);
-          JsonNode resultNode = objectMapper.readTree(postResult.get("result"));
-          String returnResult =
-              resultNode.path("message").asText() == ""
-                  ? "restart success"
-                  : resultNode.path("message").asText();
-          return returnResult;
-        }
-      }
+      applicationService.checkEnv(application);
+      applicationService.start(application, false);
+      return "restart success";
     } catch (Exception e) {
-      log.error(e.getMessage(), e);
+      return e.getMessage();
     }
-    return null;
   }
 
   private void alert(Application application, AlertTemplate alertTemplate) {
